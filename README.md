@@ -1,49 +1,36 @@
-# Haulr API server
+# Haulr Node.js API server
 
-This Dart HTTP API persists users, shipments, payments, and login sessions in MongoDB. Data is retained when the server restarts. The API listens on `0.0.0.0` and uses the `PORT` environment variable when provided (default: `8080`).
+This is a Node.js/Express mock API. It listens on `0.0.0.0`, using `PORT` when
+provided and `8080` otherwise. Its users, shipments, payments, and login tokens
+are held in memory and reset when the server restarts.
 
-## Database collections
+## Project structure
 
-MongoDB stores documents rather than SQL rows, but these collections map to the API's data tables. MongoDB creates the collections and indexes at startup.
+```text
+server.js
+src/
+  app.js
+  config.js
+  controllers/
+  middleware/
+  models/
+  routes/
+```
 
-| Collection | Fields |
-|---|---|
-| `users` | `id`, `name`, `email` (unique), `phone`, `tier`, `password_hash` |
-| `shipments` | `id`, `user_id`, `origin`, `destination`, `status`, `size`, `speed`, `weight_kg`, `price`, `created_at`, `eta`, `courier`, `events` |
-| `payments` | `id`, `user_id`, `status`, `amount`, `method_id`, `shipment_id`, `created_at` |
-| `sessions` | `token_hash`, `user_id`, `expires_at` |
-
-Passwords are stored as bcrypt hashes. Bearer tokens are generated with secure randomness and stored as SHA-256 hashes; sessions expire after 30 days. Shipment and payment records are scoped to the signed-in user.
+Routes define the HTTP endpoints, controllers implement request handling, models
+hold the mock data and domain operations, and middleware provides shared request
+handling such as authentication and error responses.
 
 ## Run locally
 
-Create a MongoDB database (MongoDB Atlas works) and set `MONGODB_URI` to its connection string, including the database name. Keep the URI private.
-
-PowerShell:
+Requires Node.js 18 or later.
 
 ```powershell
-$env:MONGODB_URI = 'mongodb+srv://<user>:<password>@<cluster>/<database>?retryWrites=true&w=majority'
-dart pub get
-dart run mock_server.dart
+npm install
+npm start
 ```
 
-For compatibility testing only, opt in to the seeded demo account and shipments:
-
-```powershell
-$env:SEED_DEMO_DATA = 'true'
-dart run mock_server.dart
-```
-
-Demo login: `demo@haulr.com` / `password123`. Do not enable `SEED_DEMO_DATA` on a public deployment.
-
-## Deploy to Render
-
-1. Create a MongoDB database and database user. Configure its network access to allow connections from your Render service.
-2. Push this project to a Git repository and create a Render **Blueprint** from it. The included `render.yaml` creates a Docker web service and uses `/v1/health` for health checks.
-3. In the Render service's environment settings, add `MONGODB_URI` as a secret using the full MongoDB connection string. Do not commit credentials.
-4. Deploy. The service URL is the base URL for the API, for example `https://<service>.onrender.com/v1`.
-
-Render supplies `PORT`; the server binds to it. `SEED_DEMO_DATA` is disabled unless explicitly set to `true`.
+Demo login: `demo@haulr.com` / `password123`.
 
 ## API
 
@@ -55,22 +42,30 @@ Render supplies `PORT`; the server binds to it. `SEED_DEMO_DATA` is disabled unl
 | POST | `/v1/auth/forgot-password` | no | Always returns a generic response |
 | GET | `/v1/me` | yes | Current user |
 | GET | `/v1/shipments` | yes | Optional `?status=inTransit&q=abuja` |
-| GET | `/v1/shipments/{id}` | yes | One of the current user's shipments |
+| GET | `/v1/shipments/{id}` | yes | Shipment details |
 | POST | `/v1/shipments/quote` | yes | `{size, weight_kg, promo_code?}` |
-| POST | `/v1/shipments` | yes | Creates a persisted shipment |
+| POST | `/v1/shipments` | yes | Creates a mock shipment |
 | GET | `/v1/payments/methods` | yes | Available method placeholders |
-| POST | `/v1/payments` | yes | Creates a persisted payment record |
+| POST | `/v1/payments` | yes | Creates a mock payment record |
 
-Send the token in `Authorization: Bearer <token>`.
+Send the token in the `Authorization: Bearer <token>` header.
 
-Payment processing and password-reset email delivery are not connected to external providers yet; those endpoints retain their test behavior. Configure real payment and email providers before treating those flows as production-ready.
+Payment processing and password-reset email delivery are not connected to
+external providers; these endpoints retain their test behavior.
 
 ## Test
 
-The existing integration suite expects the demo records. Start the server with `SEED_DEMO_DATA=true` and a test MongoDB database, then run:
+Start the server in one terminal, then run the integration suite in another:
 
 ```powershell
-node dco.js
+npm start
+npm test
 ```
 
 Set `BASE_URL` to test a deployed or non-default server.
+
+## Deploy to Render
+
+The included `render.yaml` uses the Dockerfile and checks `/v1/health`.
+Render supplies `PORT`; no database configuration is required for this
+in-memory mock API.

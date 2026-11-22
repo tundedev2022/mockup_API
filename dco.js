@@ -7,7 +7,7 @@
  *
  * Requirements:
  *   Node.js v18+ (built-in fetch)
- *   mock_server.dart running on http://localhost:8080
+ *   Node.js mock server running on http://localhost:8080
  */
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:8080/v1';
@@ -100,7 +100,7 @@ async function main() {
     console.error(
       `${colors.red}Error: Could not connect to mock server at ${BASE_URL}.${colors.reset}\n` +
       `Make sure the server is running:\n` +
-      `  dart mock_server.dart\n`
+      `  npm start\n`
     );
     process.exit(1);
   }

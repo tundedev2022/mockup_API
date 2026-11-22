@@ -1,0 +1,16 @@
+{
+  "name": "haulr-mock-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js mock API server for Haulr",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node dco.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

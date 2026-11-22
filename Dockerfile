@@ -1,13 +1,12 @@
-FROM dart:stable
+FROM node:22-alpine
 
 WORKDIR /app
 
-COPY pubspec.yaml pubspec.lock ./
-RUN dart pub get --enforce-lockfile
+COPY package*.json ./
+RUN npm ci --omit=dev
 
 COPY . .
-RUN dart analyze
 
 EXPOSE 8080
 
-CMD ["dart", "run", "mock_server.dart"]
+CMD ["npm", "start"]
