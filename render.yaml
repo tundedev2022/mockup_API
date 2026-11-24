@@ -4,3 +4,6 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     healthCheckPath: /v1/health
+    envVars:
+      - key: MONGO_URI
+        sync: false

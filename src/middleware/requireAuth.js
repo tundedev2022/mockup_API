@@ -1,10 +1,11 @@
 const User = require('../models/User');
+const tokenStore = require('../services/tokenStore');
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const authorization = req.get('authorization') || '';
   const token = authorization.replace('Bearer ', '');
-  const userId = User.findUserIdByToken(token);
-  const user = userId ? User.findById(userId) : null;
+  const userId = tokenStore.findUserId(token);
+  const user = userId ? await User.findOne({ id: userId }) : null;
 
   if (!user) {
     return res.status(401).json({ message: 'Unauthorized. Sign in first.' });

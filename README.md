@@ -1,8 +1,9 @@
 # Haulr Node.js API server
 
 This is a Node.js/Express mock API. It listens on `0.0.0.0`, using `PORT` when
-provided and `8080` otherwise. Its users, shipments, payments, and login tokens
-are held in memory and reset when the server restarts.
+provided and `8080` otherwise. Users, shipments, and payments are stored in
+MongoDB with Mongoose. Login tokens remain in memory and reset when the server
+restarts.
 
 ## Project structure
 
@@ -15,6 +16,7 @@ src/
   middleware/
   models/
   routes/
+  services/
 ```
 
 Routes define the HTTP endpoints, controllers implement request handling, models
@@ -25,12 +27,16 @@ handling such as authentication and error responses.
 
 Requires Node.js 18 or later.
 
+Set `MONGO_URI` in a local `.env` file to your MongoDB connection string before
+starting the server. Keep that file private and do not commit credentials.
+
 ```powershell
 npm install
 npm start
 ```
 
-Demo login: `demo@haulr.com` / `password123`.
+On an empty database, the server seeds the demo account (`demo@haulr.com` /
+`password123`) and sample shipments.
 
 ## API
 
@@ -67,5 +73,6 @@ Set `BASE_URL` to test a deployed or non-default server.
 ## Deploy to Render
 
 The included `render.yaml` uses the Dockerfile and checks `/v1/health`.
-Render supplies `PORT`; no database configuration is required for this
-in-memory mock API.
+Set `MONGO_URI` as a secret environment variable in Render. Render supplies
+`PORT`. User, shipment, and payment records are persisted in MongoDB; login
+tokens reset when the process restarts.

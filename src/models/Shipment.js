@@ -1,29 +1,92 @@
-const sizeFee = { small: 500, medium: 1500, large: 3000 };
-const shipments = [];
-let shipmentSequence = 48230;
+const mongoose = require('mongoose');
 
-function address(line, city) {
+const sizeFee = { small: 500, medium: 1500, large: 3000 };
+
+const addressSchema = new mongoose.Schema(
+  {
+    line: String,
+    city: String,
+    lat: Number,
+    lng: Number,
+  },
+  { _id: false, strict: false },
+);
+
+const courierSchema = new mongoose.Schema(
+  {
+    id: String,
+    name: String,
+    vehicle: String,
+    plate: String,
+    phone: String,
+  },
+  { _id: false },
+);
+
+const eventSchema = new mongoose.Schema(
+  {
+    title: String,
+    location: String,
+    timestamp: Date,
+    done: Boolean,
+  },
+  { _id: false },
+);
+
+const shipmentSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    origin: { type: addressSchema, required: true },
+    destination: { type: addressSchema, required: true },
+    status: { type: String, required: true },
+    size: { type: String, required: true },
+    speed: { type: String, required: true },
+    weight_kg: { type: Number, required: true },
+    price: { type: Number, required: true },
+    created_at: { type: Date, required: true },
+    eta: { type: Date, default: null },
+    courier: { type: courierSchema, default: null },
+    events: { type: [eventSchema], default: [] },
+    sort_order: { type: Number, required: true },
+  },
+  {
+    versionKey: false,
+    toJSON: {
+      transform: (_document, value) => {
+        delete value._id;
+        delete value.sort_order;
+        return value;
+      },
+    },
+  },
+);
+
+function makeAddress(line, city) {
   return { line, city, lat: null, lng: null };
 }
 
-function event(title, location, timestamp, done) {
-  return { title, location, timestamp: timestamp.toISOString(), done };
+function makeEvent(title, location, timestamp, done) {
+  return { title, location, timestamp, done };
 }
 
-function seed() {
+shipmentSchema.statics.seedDefaults = async function seedDefaults() {
+  if (await this.exists({})) {
+    return;
+  }
+
   const now = new Date();
-  shipments.push(
+  await this.insertMany([
     {
       id: 'HLR-48213',
-      origin: address('12 Allen Avenue', 'Ikeja'),
-      destination: address('Wuse II', 'Abuja'),
+      origin: makeAddress('12 Allen Avenue', 'Ikeja'),
+      destination: makeAddress('Wuse II', 'Abuja'),
       status: 'inTransit',
       size: 'medium',
       speed: 'express',
       weight_kg: 4.5,
       price: 8500,
-      created_at: new Date(now.getTime() - 8 * 60 * 60 * 1000).toISOString(),
-      eta: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now.getTime() - 8 * 60 * 60 * 1000),
+      eta: new Date(now.getTime() + 24 * 60 * 60 * 1000),
       courier: {
         id: 'c1',
         name: 'Musa Ibrahim',
@@ -32,58 +95,62 @@ function seed() {
         phone: '+2348000000000',
       },
       events: [
-        event('Picked up', 'Ikeja', new Date(now.getTime() - 8 * 60 * 60 * 1000), true),
-        event('Sorted at hub', 'Lagos hub', new Date(now.getTime() - 5 * 60 * 60 * 1000), true),
-        event('In transit', 'Lokoja corridor', now, false),
-        event('Out for delivery', 'Abuja', new Date(now.getTime() + 24 * 60 * 60 * 1000), false),
+        makeEvent('Picked up', 'Ikeja', new Date(now.getTime() - 8 * 60 * 60 * 1000), true),
+        makeEvent('Sorted at hub', 'Lagos hub', new Date(now.getTime() - 5 * 60 * 60 * 1000), true),
+        makeEvent('In transit', 'Lokoja corridor', now, false),
+        makeEvent('Out for delivery', 'Abuja', new Date(now.getTime() + 24 * 60 * 60 * 1000), false),
       ],
+      sort_order: 0,
     },
     {
       id: 'HLR-48230',
-      origin: address('Herbert Macaulay Way', 'Yaba'),
-      destination: address('Wuse II', 'Abuja'),
+      origin: makeAddress('Herbert Macaulay Way', 'Yaba'),
+      destination: makeAddress('Wuse II', 'Abuja'),
       status: 'pending',
       size: 'small',
       speed: 'standard',
       weight_kg: 1.2,
       price: 6400,
-      created_at: now.toISOString(),
+      created_at: now,
       eta: null,
       courier: null,
       events: [],
+      sort_order: 1,
     },
     {
       id: 'HLR-47790',
-      origin: address('Herbert Macaulay Way', 'Yaba'),
-      destination: address('Admiralty Way', 'Lekki'),
+      origin: makeAddress('Herbert Macaulay Way', 'Yaba'),
+      destination: makeAddress('Admiralty Way', 'Lekki'),
       status: 'delivered',
       size: 'small',
       speed: 'standard',
       weight_kg: 0.8,
       price: 3200,
-      created_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
       eta: null,
       courier: null,
       events: [],
+      sort_order: 2,
     },
     {
       id: 'HLR-47511',
-      origin: address('12 Allen Avenue', 'Ikeja'),
-      destination: address('Admiralty Way', 'Lekki'),
+      origin: makeAddress('12 Allen Avenue', 'Ikeja'),
+      destination: makeAddress('Admiralty Way', 'Lekki'),
       status: 'delivered',
       size: 'medium',
       speed: 'standard',
       weight_kg: 2,
       price: 5100,
-      created_at: new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now.getTime() - 13 * 24 * 60 * 60 * 1000),
       eta: null,
       courier: null,
       events: [],
+      sort_order: 3,
     },
-  );
-}
+  ]);
+};
 
-function quote(speed, size, weightKg, promoCode) {
+shipmentSchema.statics.quote = function quote(speed, size, weightKg, promoCode) {
   const express = speed === 'express';
   const baseFee = express ? 4000 : 900;
   const distanceFee = express ? 1200 : 0;
@@ -105,54 +172,61 @@ function quote(speed, size, weightKg, promoCode) {
     promo_code: discount > 0 ? code : null,
     expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
   };
-}
+};
 
-function totalOf(quoteResult) {
-  return quoteResult.base_fee + quoteResult.distance_fee +
-    quoteResult.weight_fee - quoteResult.discount;
-}
+shipmentSchema.statics.totalOf = function totalOf(quote) {
+  return quote.base_fee + quote.distance_fee + quote.weight_fee - quote.discount;
+};
 
-function list({ status, query }) {
-  return shipments.filter((shipment) => {
-    const matchesStatus = !status || shipment.status === status;
-    const route = `${shipment.origin.city} ${shipment.destination.city}`.toLowerCase();
-    const matchesQuery = !query ||
-      shipment.id.toLowerCase().includes(query) ||
-      route.includes(query);
-    return matchesStatus && matchesQuery;
-  });
-}
+shipmentSchema.statics.list = async function list({ status, query }) {
+  const filter = status ? { status } : {};
+  if (query) {
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const search = new RegExp(escapedQuery, 'i');
+    filter.$or = [
+      { id: search },
+      { 'origin.city': search },
+      { 'destination.city': search },
+    ];
+  }
 
-function findById(id) {
-  return shipments.find((shipment) => shipment.id === id) || null;
-}
+  return this.find(filter).sort({ sort_order: 1 });
+};
 
-function create({ origin, destination, speed, size, weightKg, promoCode }) {
-  const quoteResult = quote(speed, size, weightKg, promoCode);
-  const shipment = {
-    id: `HLR-${++shipmentSequence}`,
+shipmentSchema.statics.findByApiId = function findByApiId(id) {
+  return this.findOne({ id });
+};
+
+shipmentSchema.statics.createShipment = async function createShipment({
+  origin,
+  destination,
+  speed,
+  size,
+  weightKg,
+  promoCode,
+}) {
+  const [latest, firstInList] = await Promise.all([
+    this.findOne({ id: /^HLR-\d+$/ }).sort({ id: -1 }).select('id'),
+    this.findOne().sort({ sort_order: 1 }).select('sort_order'),
+  ]);
+  const lastSequence = latest ? Number(latest.id.slice(4)) : 48230;
+  const quote = this.quote(speed, size, weightKg, promoCode);
+
+  return this.create({
+    id: `HLR-${lastSequence + 1}`,
     origin,
     destination,
     status: 'pending',
     size,
     speed,
     weight_kg: weightKg,
-    price: totalOf(quoteResult),
-    created_at: new Date().toISOString(),
+    price: this.totalOf(quote),
+    created_at: new Date(),
     eta: null,
     courier: null,
     events: [],
-  };
-  shipments.unshift(shipment);
-  return shipment;
-}
-
-seed();
-
-module.exports = {
-  create,
-  findById,
-  list,
-  quote,
-  totalOf,
+    sort_order: (firstInList?.sort_order ?? 0) - 1,
+  });
 };
+
+module.exports = mongoose.model('Shipment', shipmentSchema);

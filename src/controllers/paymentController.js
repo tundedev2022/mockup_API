@@ -19,7 +19,7 @@ function methods(req, res) {
   });
 }
 
-function create(req, res) {
+async function create(req, res) {
   const amount = typeof req.body.amount === 'number' ? Math.trunc(req.body.amount) : 0;
   const methodId = typeof req.body.method_id === 'string' ? req.body.method_id : '';
 
@@ -30,7 +30,7 @@ function create(req, res) {
     return res.status(402).json({ message: 'Payment declined (test method)' });
   }
 
-  const payment = Payment.create({
+  const payment = await Payment.createPayment({
     amount,
     methodId,
     shipmentId: req.body.shipment_id,

@@ -1,61 +1,40 @@
-const users = [
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema(
   {
-    id: 'u1',
+    id: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String, required: true },
+    tier: { type: String, required: true, default: 'Standard' },
+    password: { type: String, required: true, select: false },
+  },
+  {
+    versionKey: false,
+    toJSON: {
+      transform: (_document, value) => {
+        delete value._id;
+        delete value.password;
+        return value;
+      },
+    },
+  },
+);
+
+userSchema.statics.seedDefaults = async function seedDefaults() {
+  if (await this.exists({ email: 'demo@haulr.com' })) {
+    return;
+  }
+
+  const userCount = await this.countDocuments();
+  await this.create({
+    id: `u${userCount + 1}`,
     name: 'Adaeze Okafor',
     email: 'demo@haulr.com',
     phone: '08012345678',
     tier: 'Gold',
     password: 'password123',
-  },
-];
-const tokens = new Map();
-
-function publicUser(user) {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    tier: user.tier,
-  };
-}
-
-function findByEmail(email) {
-  return users.find((user) => user.email === email) || null;
-}
-
-function findById(id) {
-  return users.find((user) => user.id === id) || null;
-}
-
-function create({ name, email, phone, password }) {
-  const user = {
-    id: `u${users.length + 1}`,
-    name,
-    email,
-    phone,
-    tier: 'Standard',
-    password,
-  };
-  users.push(user);
-  return user;
-}
-
-function createToken(userId) {
-  const token = `mock-token-${userId}-${Date.now()}`;
-  tokens.set(token, userId);
-  return token;
-}
-
-function findUserIdByToken(token) {
-  return tokens.get(token) || null;
-}
-
-module.exports = {
-  create,
-  createToken,
-  findByEmail,
-  findById,
-  findUserIdByToken,
-  publicUser,
+  });
 };
+
+module.exports = mongoose.model('User', userSchema);
